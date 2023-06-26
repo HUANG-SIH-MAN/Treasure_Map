@@ -4,8 +4,12 @@ import { InvincibleState, Poisoned } from "./state";
 export abstract class Treasure {
   private _symbol: string = "x";
   protected abstract _rate: number;
+  protected abstract name: string;
 
-  public abstract beTouch(role: Role): void;
+  public beTouch(role: Role): void {
+    console.log(`觸碰到寶物： ${this.name}`);
+    return;
+  }
 
   get symbol() {
     return this._symbol;
@@ -18,16 +22,20 @@ export abstract class Treasure {
 
 export class SuperStar extends Treasure {
   protected _rate = 10;
+  protected name = "Super Star";
 
   public beTouch(role: Role): void {
+    super.beTouch(role);
     role.state = new InvincibleState(role);
   }
 }
 
 export class Poison extends Treasure {
   protected _rate = 90;
+  protected name = "Poison";
 
   public beTouch(role: Role): void {
+    super.beTouch(role);
     role.state = new Poisoned(role);
   }
 }

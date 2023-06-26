@@ -18,29 +18,22 @@ export abstract class State {
     return;
   }
 
-  public async playerAction() {
-    if (!(this.role instanceof Player)) {
-      return;
-    }
+  public async action() {
+    const action = await this.role.getActionChoose();
 
-    const action = await readline.playerAction();
     if (action === Action.Attack) {
+      this.attack();
       return;
     }
 
     if (action === Action.Move) {
-      await this.playerMove();
+      await this.move();
       return;
     }
   }
 
-  protected async playerMove() {
-    if (!(this.role instanceof Player)) {
-      return;
-    }
-
-    const direction = await readline.playerMove();
-    this.role.setSymbol(direction);
+  protected async move() {
+    const direction = await this.role.getMoveDirection();
     const new_coord = this.role.getNewCoord(direction);
     const object = this.role.map.getObjectByPosition(new_coord);
 
@@ -51,6 +44,17 @@ export abstract class State {
 
     this.role.move(new_coord);
     return;
+  }
+
+  protected attack() {
+    const be_attack_roles = this.role.getAttackRangeRole();
+    be_attack_roles.forEach((be_attack_role) =>
+      be_attack_role.beAttacked(this.role.harm)
+    );
+  }
+
+  public beAttacked(harm: number) {
+    this.role.addHp(-harm);
   }
 
   get name() {

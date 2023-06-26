@@ -5,7 +5,7 @@ import { Player, Monster, Role } from "./role";
 export class Map {
   private _size: number;
   private position_map: { [coord: string]: Role | Obstacle | Treasure } = {};
-  private player: Player;
+  private _player: Player;
   private all_monster: Monster[] = [];
 
   constructor(map_size: number = 5) {
@@ -19,8 +19,8 @@ export class Map {
     this._size = map_size;
 
     const player_coord = this.getRandomCoord();
-    this.player = new Player(this, player_coord.x_coord, player_coord.y_coord);
-    this.addObjectOnMap(player_coord.coord, this.player);
+    this._player = new Player(this, player_coord.x_coord, player_coord.y_coord);
+    this.addObjectOnMap(player_coord.coord, this._player);
 
     for (let i = 0; i < this._size; i++) {
       const monster_coord = this.getRandomCoord();
@@ -40,8 +40,15 @@ export class Map {
     this.allRoleStartRound();
     this.printMap();
     this.printPlayerState();
-    await this.player.action();
 
+    await this._player.action();
+    for (const monster of this.all_monster) {
+      await monster.action();
+    }
+
+    if (this.isGameOver()) {
+      return;
+    }
     return await this.startRound();
   }
 
@@ -75,6 +82,11 @@ export class Map {
     return;
   }
 
+  public removeMonster(target_monster: Monster) {
+    this.all_monster.filter((monster) => monster !== target_monster);
+    return;
+  }
+
   private printMap() {
     console.log("    Treasure Map    \n");
     for (let y = this._size - 1; y >= 0; y--) {
@@ -90,18 +102,36 @@ export class Map {
 
   private printPlayerState() {
     console.log(
-      `player state: ${this.player.state.name}\nhp: ${this.player.hp}`
+      `player state: ${this._player.state.name}\nhp: ${this._player.hp}`
     );
     return;
   }
 
   private allRoleStartRound() {
-    this.player.startRound();
+    this._player.startRound();
     this.all_monster.forEach((monster) => monster.startRound());
     return;
   }
 
+  private isGameOver(): boolean {
+    if (this._player.hp === 0) {
+      console.log("玩家死亡，遊戲結束 !!");
+      return true;
+    }
+
+    if (this.all_monster.length === 0) {
+      console.log("玩家擊敗所有怪物，遊戲勝利 !!");
+      return true;
+    }
+
+    return false;
+  }
+
   get size() {
     return this._size;
+  }
+
+  get player() {
+    return this._player;
   }
 }

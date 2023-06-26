@@ -1,4 +1,4 @@
-import { PlayerDirection } from "./role";
+import { RoleDirection } from "./role";
 import { Action } from "./state";
 
 import * as readline from "readline";
@@ -24,22 +24,22 @@ async function playerAction() {
 }
 
 async function playerMove() {
-  return new Promise<PlayerDirection>((resolve) => {
+  return new Promise<RoleDirection>((resolve) => {
     rl.question("選擇移動方向 (1)上 (2)下 (3)左 (4)右", (action) => {
       if (action === "1") {
-        return resolve(PlayerDirection.Up);
+        return resolve(RoleDirection.Up);
       }
 
       if (action === "2") {
-        return resolve(PlayerDirection.Down);
+        return resolve(RoleDirection.Down);
       }
 
       if (action === "3") {
-        return resolve(PlayerDirection.Left);
+        return resolve(RoleDirection.Left);
       }
 
       if (action === "4") {
-        return resolve(PlayerDirection.Right);
+        return resolve(RoleDirection.Right);
       }
 
       return playerMove();
