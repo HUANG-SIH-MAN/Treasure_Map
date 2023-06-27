@@ -8,7 +8,7 @@ export abstract class Role {
   protected abstract _symbol: string;
   protected abstract _hp: number;
   protected abstract _harm: number;
-  protected abstract full_hp: number;
+  protected abstract _full_hp: number;
   protected _state: State;
   protected _x_coord: number;
   protected _y_coord: number;
@@ -30,6 +30,7 @@ export abstract class Role {
     return;
   }
 
+  // FIXME: 在重構一下
   public getNewCoord(direction: RoleDirection): string {
     const old_coord = this.getStringCoord();
     let new_coord: string;
@@ -96,18 +97,7 @@ export abstract class Role {
   }
 
   public addHp(add_hp: number) {
-    if (add_hp + this._hp > this.full_hp) {
-      this._hp = this.full_hp;
-      return;
-    }
-
-    if (add_hp + this._hp <= 0) {
-      this._hp = 0;
-      this.die();
-      return;
-    }
-
-    this._hp += add_hp;
+    this._state.addHp(add_hp);
     return;
   }
 
@@ -115,7 +105,7 @@ export abstract class Role {
     return `${this._x_coord}-${this._y_coord}`;
   }
 
-  protected die() {
+  public die() {
     this._map.removeObjectOnMap(this.getStringCoord());
   }
 
@@ -135,6 +125,11 @@ export abstract class Role {
     this._state = state;
   }
 
+  public setHp(hp: number) {
+    this._hp = hp;
+    return;
+  }
+
   get x_coord() {
     return this._x_coord;
   }
@@ -150,6 +145,10 @@ export abstract class Role {
   get harm() {
     return this._harm;
   }
+
+  get full_hp() {
+    return this._full_hp;
+  }
 }
 
 export enum RoleDirection {
@@ -160,7 +159,7 @@ export enum RoleDirection {
 }
 
 export class Player extends Role {
-  protected full_hp: number = 300;
+  protected _full_hp: number = 300;
   protected _symbol: string;
   protected _hp = 300;
   protected _harm = 1;
@@ -252,7 +251,7 @@ export class Player extends Role {
 }
 
 export class Monster extends Role {
-  protected full_hp: number = 1;
+  protected _full_hp: number = 1;
   protected _symbol: string = "M";
   protected _hp = 1;
   protected _harm = 50;
@@ -288,7 +287,7 @@ export class Monster extends Role {
     return distance === 1 ? true : false;
   }
 
-  protected die() {
+  public die() {
     super.die();
     this._map.removeMonster(this);
     return;

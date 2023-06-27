@@ -1,5 +1,10 @@
 import { Role } from "./role";
-import { InvincibleState, Poisoned } from "./state";
+import {
+  InvincibleState,
+  PoisonedState,
+  AcceleratedState,
+  HealingState,
+} from "./state";
 
 export abstract class Treasure {
   private _symbol: string = "x";
@@ -31,17 +36,42 @@ export class SuperStar extends Treasure {
 }
 
 export class Poison extends Treasure {
-  protected _rate = 90;
+  protected _rate = 25;
   protected name = "Poison";
 
   public beTouch(role: Role): void {
     super.beTouch(role);
-    role.state = new Poisoned(role);
+    role.state = new PoisonedState(role);
+  }
+}
+
+export class AcceleratingPotion extends Treasure {
+  protected _rate = 20;
+  protected name = "Accelerating Potion";
+
+  public beTouch(role: Role): void {
+    super.beTouch(role);
+    role.state = new AcceleratedState(role);
+  }
+}
+
+export class HealingPotion extends Treasure {
+  protected _rate = 15;
+  protected name = "Healing Potion";
+
+  public beTouch(role: Role): void {
+    super.beTouch(role);
+    role.state = new HealingState(role);
   }
 }
 
 export function randomCreateTreasure(): Treasure {
-  const treasures: Treasure[] = [new SuperStar(), new Poison()];
+  const treasures: Treasure[] = [
+    new SuperStar(),
+    new Poison(),
+    new AcceleratingPotion(),
+    new HealingPotion(),
+  ];
 
   const totalRate = treasures.reduce((sum, treasure) => sum + treasure.rate, 0);
   const randomNumber = Math.random() * totalRate;

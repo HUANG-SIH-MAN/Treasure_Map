@@ -83,7 +83,9 @@ export class Map {
   }
 
   public removeMonster(target_monster: Monster) {
-    this.all_monster.filter((monster) => monster !== target_monster);
+    this.all_monster = this.all_monster.filter(
+      (monster) => monster !== target_monster
+    );
     return;
   }
 
