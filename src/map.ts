@@ -6,7 +6,7 @@ export class Map {
   private _size: number;
   private position_map: { [coord: string]: Role | Obstacle | Treasure } = {};
   private _player: Player;
-  private all_monster: Monster[] = [];
+  private _all_monster: Monster[] = [];
 
   constructor(map_size: number = 5) {
     if (map_size < 5) {
@@ -29,7 +29,7 @@ export class Map {
         monster_coord.x_coord,
         monster_coord.y_coord
       );
-      this.all_monster.push(monster);
+      this._all_monster.push(monster);
       this.addObjectOnMap(monster_coord.coord, monster);
       this.addObjectOnMap(this.getRandomCoord().coord, randomCreateTreasure());
       this.addObjectOnMap(this.getRandomCoord().coord, new Obstacle());
@@ -42,13 +42,16 @@ export class Map {
     this.printPlayerState();
 
     await this._player.action();
-    for (const monster of this.all_monster) {
+    for (const monster of this._all_monster) {
       await monster.action();
     }
 
     if (this.isGameOver()) {
       return;
     }
+
+    this.randomCreateMonsterOnMap();
+    this.randomCreateTreasureOnMap();
     return await this.startRound();
   }
 
@@ -56,7 +59,7 @@ export class Map {
     return this.position_map[coord];
   }
 
-  private getRandomCoord(): {
+  public getRandomCoord(): {
     coord: string;
     x_coord: number;
     y_coord: number;
@@ -83,10 +86,23 @@ export class Map {
   }
 
   public removeMonster(target_monster: Monster) {
-    this.all_monster = this.all_monster.filter(
+    this._all_monster = this._all_monster.filter(
       (monster) => monster !== target_monster
     );
     return;
+  }
+
+  public isCoordCorrect(x_coord: number, y_coord: number) {
+    if (
+      x_coord < 0 ||
+      y_coord < 0 ||
+      x_coord >= this._size ||
+      y_coord >= this._size
+    ) {
+      return false;
+    }
+
+    return true;
   }
 
   private printMap() {
@@ -111,7 +127,7 @@ export class Map {
 
   private allRoleStartRound() {
     this._player.startRound();
-    this.all_monster.forEach((monster) => monster.startRound());
+    this._all_monster.forEach((monster) => monster.startRound());
     return;
   }
 
@@ -121,12 +137,40 @@ export class Map {
       return true;
     }
 
-    if (this.all_monster.length === 0) {
+    if (this._all_monster.length === 0) {
       console.log("玩家擊敗所有怪物，遊戲勝利 !!");
       return true;
     }
 
     return false;
+  }
+
+  private randomCreateMonsterOnMap() {
+    const monster_rate = 0.3;
+    if (Math.random() < monster_rate) {
+      const monster_coord = this.getRandomCoord();
+      const monster = new Monster(
+        this,
+        monster_coord.x_coord,
+        monster_coord.y_coord
+      );
+      this._all_monster.push(monster);
+      this.addObjectOnMap(monster_coord.coord, monster);
+      console.log(`每回合隨機生成怪物 * 1，位置：${monster_coord}`);
+    }
+
+    return;
+  }
+
+  private randomCreateTreasureOnMap() {
+    const treasure_rate = 0.5;
+    if (Math.random() < treasure_rate) {
+      const { coord } = this.getRandomCoord();
+      this.addObjectOnMap(coord, randomCreateTreasure());
+      console.log(`每回合隨機生成寶箱 * 1，位置：${coord}`);
+    }
+
+    return;
   }
 
   get size() {
@@ -135,5 +179,9 @@ export class Map {
 
   get player() {
     return this._player;
+  }
+
+  get all_monster() {
+    return this._all_monster;
   }
 }

@@ -1,4 +1,4 @@
-import { Role, Player } from "./role";
+import { Role, RoleDirection } from "./role";
 
 export enum Action {
   Move,
@@ -35,8 +35,15 @@ export abstract class State {
     }
   }
 
-  protected async move() {
-    const direction = await this.role.getMoveDirection();
+  protected async move(
+    can_use_directions: RoleDirection[] = [
+      RoleDirection.Up,
+      RoleDirection.Down,
+      RoleDirection.Left,
+      RoleDirection.Right,
+    ]
+  ) {
+    const direction = await this.role.getMoveDirection(can_use_directions);
     const new_coord = this.role.getNewCoord(direction);
     const object = this.role.map.getObjectByPosition(new_coord);
 
@@ -189,6 +196,102 @@ export class HealingState extends State {
 
     if (this.role.hp === this.role.full_hp) {
       this.role.state = new NormalState(this.role);
+    }
+    return;
+  }
+}
+
+export class OrderlessState extends State {
+  protected _name: string = "Orderless";
+  protected affect_round = 3;
+
+  constructor(role: Role) {
+    super(role);
+    this.state_round = 0;
+  }
+
+  public startRound() {
+    super.startRound();
+
+    if (this.state_round > this.affect_round) {
+      this.role.state = new NormalState(this.role);
+    }
+    return;
+  }
+
+  public async action() {
+    const can_use_directions =
+      Math.random() > 0.5
+        ? [RoleDirection.Up, RoleDirection.Down]
+        : [RoleDirection.Left, RoleDirection.Right];
+
+    await this.move(can_use_directions);
+    return;
+  }
+}
+
+export class StockpileState extends State {
+  protected _name: string = "Stockpile";
+  protected affect_round = 2;
+
+  public startRound() {
+    super.startRound();
+
+    if (this.state_round > this.affect_round) {
+      this.role.state = new EruptingState(this.role);
+    }
+    return;
+  }
+
+  public beAttacked() {
+    console.log("被攻擊，恢復正常狀態");
+    this.role.state = new NormalState(this.role);
+    return;
+  }
+}
+
+export class EruptingState extends State {
+  protected _name: string = "Erupting";
+  protected affect_round = 3;
+  private harm: number = 50;
+
+  public startRound() {
+    super.startRound();
+
+    if (this.state_round > this.affect_round) {
+      this.role.state = new TeleportState(this.role);
+    }
+    return;
+  }
+
+  protected attack() {
+    const be_attack_roles = [
+      this.role.map.player,
+      ...this.role.map.all_monster,
+    ].filter((role) => role !== this.role);
+
+    be_attack_roles.forEach((be_attack_role) =>
+      be_attack_role.beAttacked(this.harm)
+    );
+  }
+}
+
+export class TeleportState extends State {
+  protected _name: string = "Teleport";
+  protected affect_round = 1;
+
+  public startRound() {
+    super.startRound();
+
+    if (this.state_round > this.affect_round) {
+      this.role.state = new NormalState(this.role);
+
+      console.log(`${this.role.constructor.name} 隨機移動!!`);
+      const old_coord = this.role.getStringCoord();
+      this.role.map.removeObjectOnMap(old_coord);
+
+      const new_coord = this.role.map.getRandomCoord();
+      this.role.map.addObjectOnMap(new_coord.coord, this.role);
     }
     return;
   }

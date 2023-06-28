@@ -18,31 +18,24 @@ async function playerAction() {
         return resolve(Action.Attack);
       }
 
-      return playerAction();
+      return playerAction().then(resolve);
     });
   });
 }
 
-async function playerMove() {
+async function playerMove(can_use_directions: RoleDirection[]) {
+  let choose = "";
+  can_use_directions.forEach((direction, index) => {
+    choose += `(${index + 1}) ${direction}`;
+  });
   return new Promise<RoleDirection>((resolve) => {
-    rl.question("選擇移動方向 (1)上 (2)下 (3)左 (4)右", (action) => {
-      if (action === "1") {
-        return resolve(RoleDirection.Up);
+    rl.question(`選擇移動方向 ${choose}`, (answer) => {
+      const action = Number(answer);
+      if (action <= 0 || action > can_use_directions.length) {
+        return playerMove(can_use_directions).then(resolve);
       }
 
-      if (action === "2") {
-        return resolve(RoleDirection.Down);
-      }
-
-      if (action === "3") {
-        return resolve(RoleDirection.Left);
-      }
-
-      if (action === "4") {
-        return resolve(RoleDirection.Right);
-      }
-
-      return playerMove();
+      return resolve(can_use_directions[action - 1]);
     });
   });
 }

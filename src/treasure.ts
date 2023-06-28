@@ -4,6 +4,9 @@ import {
   PoisonedState,
   AcceleratedState,
   HealingState,
+  OrderlessState,
+  StockpileState,
+  TeleportState,
 } from "./state";
 
 export abstract class Treasure {
@@ -65,12 +68,45 @@ export class HealingPotion extends Treasure {
   }
 }
 
+export class DevilFruit extends Treasure {
+  protected _rate = 10;
+  protected name = "Devil Fruit";
+
+  public beTouch(role: Role): void {
+    super.beTouch(role);
+    role.state = new OrderlessState(role);
+  }
+}
+
+export class KingRock extends Treasure {
+  protected _rate = 10;
+  protected name = "King's Rock";
+
+  public beTouch(role: Role): void {
+    super.beTouch(role);
+    role.state = new StockpileState(role);
+  }
+}
+
+export class DokodemoDoor extends Treasure {
+  protected _rate = 10;
+  protected name = "Dokodemo Door";
+
+  public beTouch(role: Role): void {
+    super.beTouch(role);
+    role.state = new TeleportState(role);
+  }
+}
+
 export function randomCreateTreasure(): Treasure {
   const treasures: Treasure[] = [
     new SuperStar(),
     new Poison(),
     new AcceleratingPotion(),
     new HealingPotion(),
+    new DevilFruit(),
+    new KingRock(),
+    new DokodemoDoor(),
   ];
 
   const totalRate = treasures.reduce((sum, treasure) => sum + treasure.rate, 0);

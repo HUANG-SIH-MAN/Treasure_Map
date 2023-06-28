@@ -23,44 +23,39 @@ export abstract class Role {
 
   public abstract getAttackRangeRole(): Role[];
   public abstract getActionChoose(): Promise<Action>;
-  public abstract getMoveDirection(): Promise<RoleDirection>;
+  public abstract getMoveDirection(
+    can_use_directions: RoleDirection[]
+  ): Promise<RoleDirection>;
 
   public startRound() {
     this._state.startRound();
     return;
   }
 
-  // FIXME: 在重構一下
-  public getNewCoord(direction: RoleDirection): string {
-    const old_coord = this.getStringCoord();
-    let new_coord: string;
-    let size: number;
-    switch (direction) {
-      case RoleDirection.Up:
-        size = this._y_coord + 1;
-        new_coord = `${this._x_coord}-${this._y_coord + 1}`;
-        break;
-      case RoleDirection.Down:
-        size = this._y_coord - 1;
-        new_coord = `${this._x_coord}-${this._y_coord - 1}`;
-        break;
-      case RoleDirection.Right:
-        size = this._x_coord + 1;
-        new_coord = `${this._x_coord + 1}-${this._y_coord}`;
-        break;
-      case RoleDirection.Left:
-        size = this._x_coord - 1;
-        new_coord = `${this._x_coord - 1}-${this._y_coord}`;
-        break;
-      default:
-        throw new Error("Invalid direction");
+  public getNewCoord(
+    direction: RoleDirection,
+    old_x_coord: number = this._x_coord,
+    old_y_coord: number = this._y_coord
+  ): string {
+    const new_x_coord =
+      direction === RoleDirection.Right
+        ? old_x_coord + 1
+        : direction === RoleDirection.Left
+        ? old_x_coord - 1
+        : old_x_coord;
+
+    const new_y_coord =
+      direction === RoleDirection.Up
+        ? old_y_coord + 1
+        : direction === RoleDirection.Down
+        ? old_y_coord - 1
+        : old_y_coord;
+
+    if (this._map.isCoordCorrect(new_x_coord, new_y_coord)) {
+      return `${new_x_coord}-${new_y_coord}`;
     }
 
-    if (size < 0 || size >= this._map.size) {
-      return old_coord;
-    }
-
-    return new_coord;
+    return `${old_x_coord}-${old_y_coord}`;
   }
 
   public move(new_coord: string) {
@@ -106,6 +101,7 @@ export abstract class Role {
   }
 
   public die() {
+    console.log(`${this.getStringCoord()} ${this.constructor.name} 死亡！`);
     this._map.removeObjectOnMap(this.getStringCoord());
   }
 
@@ -160,7 +156,7 @@ export enum RoleDirection {
 
 export class Player extends Role {
   protected _full_hp: number = 300;
-  protected _symbol: string;
+  protected _symbol: RoleDirection;
   protected _hp = 300;
   protected _harm = 1;
 
@@ -187,55 +183,31 @@ export class Player extends Role {
   }
 
   public getAttackRangeRole() {
-    // FIXME: 這個要在重構一下，超醜
     const be_attac_role: Role[] = [];
     let object: Role | Treasure | Obstacle;
-    switch (this._symbol) {
-      case RoleDirection.Up:
-        for (let i = this._y_coord + 1; i < this._map.size; i++) {
-          object = this._map.getObjectByPosition(`${this._x_coord}-${i}`);
-          if (object instanceof Obstacle) {
-            break;
-          }
-          if (object instanceof Monster) {
-            be_attac_role.push(object);
-          }
-        }
+
+    let old_coord = this.getStringCoord();
+    let new_coord: string = "";
+    while (true) {
+      const [x, y] = old_coord.split("-");
+
+      new_coord = this.getNewCoord(this._symbol, Number(x), Number(y));
+      if (new_coord === old_coord) {
         break;
-      case RoleDirection.Down:
-        for (let i = this._y_coord - 1; i >= 0; i--) {
-          object = this._map.getObjectByPosition(`${this._x_coord}-${i}`);
-          if (object instanceof Obstacle) {
-            break;
-          }
-          if (object instanceof Monster) {
-            be_attac_role.push(object);
-          }
-        }
+      }
+
+      object = this._map.getObjectByPosition(new_coord);
+      if (object instanceof Obstacle) {
         break;
-      case RoleDirection.Left:
-        for (let i = this._x_coord - 1; i >= 0; i--) {
-          object = this._map.getObjectByPosition(`${i}-${this._y_coord}`);
-          if (object instanceof Obstacle) {
-            break;
-          }
-          if (object instanceof Monster) {
-            be_attac_role.push(object);
-          }
-        }
-        break;
-      case RoleDirection.Right:
-        for (let i = this._x_coord + 1; i < this._map.size; i++) {
-          object = this._map.getObjectByPosition(`${i}-${this._y_coord}`);
-          if (object instanceof Obstacle) {
-            break;
-          }
-          if (object instanceof Monster) {
-            be_attac_role.push(object);
-          }
-        }
-        break;
+      }
+
+      if (object instanceof Monster) {
+        be_attac_role.push(object);
+      }
+
+      old_coord = new_coord;
     }
+
     return be_attac_role;
   }
 
@@ -243,8 +215,8 @@ export class Player extends Role {
     return await readline.playerAction();
   }
 
-  public async getMoveDirection() {
-    const direction = await readline.playerMove();
+  public async getMoveDirection(can_use_directions: RoleDirection[]) {
+    const direction = await readline.playerMove(can_use_directions);
     this.setSymbol(direction);
     return direction;
   }
@@ -293,15 +265,9 @@ export class Monster extends Role {
     return;
   }
 
-  public async getMoveDirection() {
-    const direction = [
-      RoleDirection.Up,
-      RoleDirection.Down,
-      RoleDirection.Left,
-      RoleDirection.Right,
-    ];
-    const random = Math.floor(Math.random() * 4);
-    console.log(`移動方向${direction[random]}`);
-    return direction[random];
+  public async getMoveDirection(can_use_directions: RoleDirection[]) {
+    const random = Math.floor(Math.random() * can_use_directions.length);
+    console.log(`移動方向${can_use_directions[random]}`);
+    return can_use_directions[random];
   }
 }
